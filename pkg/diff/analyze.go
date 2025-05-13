@@ -3,7 +3,6 @@ package diff
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"math"
 	"strings"
 
@@ -12,8 +11,9 @@ import (
 	fianoUEFI "github.com/linuxboot/fiano/pkg/uefi"
 	"github.com/steakknife/hamming"
 
+	"github.com/9elements/converged-security-suite/v2/pkg/bootflow/systemartifacts/biosimage"
+	"github.com/9elements/converged-security-suite/v2/pkg/bootflow/types"
 	"github.com/9elements/converged-security-suite/v2/pkg/mathtools"
-	"github.com/9elements/converged-security-suite/v2/pkg/pcr"
 	"github.com/9elements/converged-security-suite/v2/pkg/uefi/ffs"
 	pkgbytes "github.com/linuxboot/fiano/pkg/bytes"
 )
@@ -81,8 +81,8 @@ func (s NodeInfos) String() string {
 // RelatedMeasurement contains the related measurement and the data chunks
 // specifically related to the diff.
 type RelatedMeasurement struct {
-	RelatedDataChunks pcr.DataChunks
-	pcr.Measurement
+	RelatedDataChunks DataChunks
+	Measurement
 }
 
 // RelatedMeasurementsLaconic is a helper to print measurements in a laconic way
@@ -96,24 +96,26 @@ func (s RelatedMeasurementsLaconic) String() string {
 	for _, measurement := range s {
 		chunksComment := laconicChunksString(measurement.RelatedDataChunks)
 		if chunksComment == "" {
-			ids = append(ids, measurement.ID.String())
+			ids = append(ids, measurement.Description)
 			continue
 		}
-		ids = append(ids, measurement.ID.String()+":"+chunksComment)
+		ids = append(ids, measurement.Description+":"+chunksComment)
 	}
 	return strings.Join(ids, ", ")
 }
 
-func laconicChunksString(chunks pcr.DataChunks) string {
+func laconicChunksString(chunks DataChunks) string {
 	var r []string
 	for _, chunk := range chunks {
-		if chunk.ID == pcr.DataChunkIDUndefined {
-			// if at least one chunk has no comment, then we cannot construct
-			// a valid string, let's signal about the problem through returning
-			// an empty string.
-			return ""
+		if chunk.Description != "" {
+			r = append(r, chunk.Description)
+			continue
 		}
-		r = append(r, chunk.ID.String())
+		if chunk.ForceBytes != nil {
+			r = append(r, fmt.Sprintf("ForceBytes:%X", chunk.ForceBytes))
+			continue
+		}
+		r = append(r, fmt.Sprintf("Ref:%v", chunk.Reference))
 	}
 	return strings.Join(r, ",")
 }
@@ -156,6 +158,9 @@ type AnalysisReport struct {
 	// Entries contains each block with different data.
 	Entries AnalysisReportEntries
 
+	// AddressMapper converts the address in DiffRange into a position in the SystemArtifact.
+	AddressMapper types.AddressMapper
+
 	// FirstProblemOffset is the offset of the first byte with a different value.
 	FirstProblemOffset uint64
 
@@ -177,50 +182,94 @@ type Firmware interface {
 	NameToRangesMap() map[string]pkgbytes.Ranges
 }
 
+type DataChunk struct {
+	Description   string
+	ForceBytes    []byte
+	Reference     pkgbytes.Range
+	AddressMapper types.AddressMapper
+	CustomData    any
+}
+
+type DataChunks []DataChunk
+
+type Measurement struct {
+	Description string
+	Chunks      DataChunks
+	CustomData  any
+}
+
+type Measurements []Measurement
+
 // Analyze generates a difference report filled with additional simple
 // analytics, like hamming distance.
 func Analyze(
-	diffRangesOrig pkgbytes.Ranges,
-	measurements pcr.Measurements,
-	goodFirmware Firmware,
-	badData []byte,
-) (report AnalysisReport) {
-	diffRangesOrig.Sort()
-	diffRanges := pkgbytes.MergeRanges(diffRangesOrig, 0)
-
-	if len(diffRanges) > rangeAmountThresholdReduceRanges {
-		diffRanges = pkgbytes.MergeRanges(diffRanges, reduceRangesDistance)
+	diffMemRanges Ranges,
+	memMapper types.AddressMapper,
+	measurements Measurements,
+	goodFirmware, badFirmware *biosimage.BIOSImage,
+) (report AnalysisReport, err error) {
+	diffMemRanges.Sort()
+	diffMemRanges = pkgbytes.MergeRanges(diffMemRanges, 0)
+	if len(diffMemRanges) > rangeAmountThresholdReduceRanges {
+		diffMemRanges = pkgbytes.MergeRanges(diffMemRanges, reduceRangesDistance)
 	}
 
-	goodData := goodFirmware.Buf()
+	rangesGood, err := memMapper.Resolve(goodFirmware, diffMemRanges...)
+	if err != nil {
+		return AnalysisReport{}, fmt.Errorf("unable to resolve the good image ranges: %w", err)
+	}
+
+	if len(diffMemRanges) != len(rangesGood) {
+		return AnalysisReport{}, fmt.Errorf("currently Analyze only one-to-one range mapping, but %d != %d", len(diffMemRanges), len(rangesGood))
+	}
+
+	rangesBad, err := memMapper.Resolve(badFirmware, diffMemRanges...)
+	if err != nil {
+		return AnalysisReport{}, fmt.Errorf("unable to resolve the bad image ranges: %w", err)
+	}
+
+	if len(rangesGood) != len(rangesBad) {
+		return AnalysisReport{}, fmt.Errorf("currently Analyze only supports the case where the amount of ranges for both images are the same, but %d != %d", len(rangesGood), len(rangesBad))
+	}
+
+	goodData := goodFirmware.Content
+	goodUEFI, err := goodFirmware.Parse()
+	if err != nil {
+		return AnalysisReport{}, fmt.Errorf("unable to parse the UEFI layout: %w", err)
+	}
+	badData := badFirmware.Content
 
 	// Preparing data structures to quickly find UEFI nodes overlapping with
 	// a byte range.
 
-	allNodes, err := goodFirmware.GetByRange(pkgbytes.Range{
+	allNodes, err := goodUEFI.GetByRange(pkgbytes.Range{
 		Offset: 0,
 		Length: uint64(len(goodData)),
 	})
 	if err != nil {
-		log.Println("unable to scan for UEFI nodes:", err)
+		return AnalysisReport{}, fmt.Errorf("unable to scan for UEFI nodes: %w", err)
 	}
 	nodesIntervalTree := newNodesIntervalTree(allNodes)
-	namesIntervalTree := newNamesIntervalTree(goodFirmware.NameToRangesMap())
+	namesIntervalTree := newNamesIntervalTree(goodUEFI.NameToRangesMap())
 
 	// Preparing a report
 
+	report.AddressMapper = memMapper
 	report.FirstProblemOffset = math.MaxUint64
-	for _, diffRange := range diffRanges {
-		entryEndOffset := diffRange.Offset + diffRange.Length
-		entryGoodData := goodData[diffRange.Offset:entryEndOffset]
-		entryBadData := badData[diffRange.Offset:entryEndOffset]
+	for idx, rM := range diffMemRanges {
+		rG := rangesGood[idx]
+		rB := rangesBad[idx]
+		entryEndOffsetG := rG.Offset + rG.Length
+		entryEndOffsetB := rB.Offset + rB.Length
+		entryDataG := goodData[rG.Offset:entryEndOffsetG]
+		entryDataB := badData[rB.Offset:entryEndOffsetB]
 
 		var relatedMeasurements []RelatedMeasurement
 		for _, m := range measurements {
-			var relatedDataChunks pcr.DataChunks
-			for _, data := range m.Data {
-				if data.Range.Intersect(diffRange) {
-					relatedDataChunks = append(relatedDataChunks, *data.Copy())
+			var relatedDataChunks DataChunks
+			for _, data := range m.Chunks {
+				if data.Reference.Intersect(rM) {
+					relatedDataChunks = append(relatedDataChunks, data)
 				}
 			}
 			if len(relatedDataChunks) == 0 {
@@ -228,15 +277,15 @@ func Analyze(
 			}
 			relatedMeasurements = append(relatedMeasurements, RelatedMeasurement{
 				RelatedDataChunks: relatedDataChunks,
-				Measurement:       *m.Copy(),
+				Measurement:       m,
 			})
 		}
 
 		// Filling some analysisEntry fields
 		analysisEntry := AnalysisReportEntry{
-			DiffRange:                diffRange,
-			HammingDistance:          hammingDistance(entryGoodData, entryBadData, nil, nil),
-			HammingDistanceNon00orFF: hammingDistance(entryGoodData, entryBadData, nil, []byte{0x00, 0xff}),
+			DiffRange:                rM,
+			HammingDistance:          hammingDistance(entryDataG, entryDataB, nil, nil),
+			HammingDistanceNon00orFF: hammingDistance(entryDataG, entryDataB, nil, []byte{0x00, 0xff}),
 			RelatedMeasurements:      relatedMeasurements,
 		}
 
@@ -245,7 +294,7 @@ func Analyze(
 		// analysisEntry.Nodes should contain a list of UEFI nodes (regions,
 		// volumes, modules, files) which overlaps with the diffRange.
 		var overlappedNodes []*ffs.Node
-		for _, node := range nodesIntervalTree.FindOverlapping(diffRange) {
+		for _, node := range nodesIntervalTree.FindOverlapping(rM) {
 			overlappedNodes = append(overlappedNodes, node.(*ffs.Node))
 		}
 		if len(overlappedNodes) == 0 {
@@ -258,7 +307,7 @@ func Analyze(
 			// even if the range is definitely related to some nodes. In this
 			// case we use a fallback way, which is more reliable, but returns
 			// only names (instead of *ffs.Node objects).
-			for _, name := range namesIntervalTree.FindOverlapping(diffRange) {
+			for _, name := range namesIntervalTree.FindOverlapping(rM) {
 				analysisEntry.Nodes = append(analysisEntry.Nodes, NodeInfo{
 					Description: name.(string),
 				})
@@ -269,10 +318,10 @@ func Analyze(
 
 		// Filling report
 
-		if diffRange.Offset < report.FirstProblemOffset {
-			report.FirstProblemOffset = diffRange.Offset
+		if rM.Offset < report.FirstProblemOffset {
+			report.FirstProblemOffset = rM.Offset
 		}
-		report.BytesChanged += diffRange.Length
+		report.BytesChanged += rM.Length
 		report.HammingDistance += analysisEntry.HammingDistance
 		report.HammingDistanceNon00orFF += analysisEntry.HammingDistanceNon00orFF
 		report.Entries = append(report.Entries, analysisEntry)
@@ -368,10 +417,10 @@ func (report *AnalysisReport) AddOffset(offset int64) {
 		for idx := range entry.RelatedMeasurements {
 			measurement := entry.RelatedMeasurements[idx]
 			for idx := range measurement.RelatedDataChunks {
-				measurement.RelatedDataChunks[idx].Range.Offset += uint64(offset)
+				measurement.RelatedDataChunks[idx].Reference.Offset += uint64(offset)
 			}
-			for idx := range measurement.Data {
-				measurement.Data[idx].Range.Offset += uint64(offset)
+			for idx := range measurement.Chunks {
+				measurement.Chunks[idx].Reference.Offset += uint64(offset)
 			}
 		}
 	}
