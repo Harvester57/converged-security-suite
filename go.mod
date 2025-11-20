@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/9elements/go-linux-lowlevel-hw v1.0.3
-	github.com/alecthomas/kong v1.12.1
+	github.com/alecthomas/kong v1.13.0
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
@@ -15,7 +15,7 @@ require (
 	github.com/go-ng/xmath v0.0.0-20230704233441-028f5ea62335
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/google/go-attestation v0.6.0
-	github.com/google/go-tpm v0.9.6
+	github.com/google/go-tpm v0.9.7
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/linuxboot/fiano v6.0.0-rc+incompatible
@@ -31,7 +31,7 @@ require (
 	github.com/xaionaro-go/unhash v0.0.0-20230427202706-0195a574c620
 	github.com/xaionaro-go/unsafetools v0.0.0-20210722164218-75ba48cf7b3c
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
-	golang.org/x/term v0.36.0
+	golang.org/x/term v0.37.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -47,7 +47,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
