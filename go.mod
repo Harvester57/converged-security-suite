@@ -3,7 +3,7 @@ module github.com/9elements/converged-security-suite/v2
 go 1.24.0
 
 require (
-	github.com/9elements/go-linux-lowlevel-hw v1.0.3
+	github.com/9elements/go-linux-lowlevel-hw v1.0.4
 	github.com/alecthomas/kong v1.13.0
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
@@ -42,10 +42,10 @@ require (
 	github.com/go-ng/xsort v0.0.0-20220617174223-1d146907bccc // indirect
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/intel-go/cpuid v0.0.0-20220614022739-219e067757cb // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/u-root/cpuid v0.0.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
