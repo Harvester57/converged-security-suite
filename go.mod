@@ -21,9 +21,9 @@ require (
 	github.com/linuxboot/fiano v1.2.1-0.20250121191917-5620ca1697c5
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/marcoguerri/go-tpm-tcti v0.0.0-20210425104733-8e8c8fe68e60
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/pretty v1.2.1
 	github.com/ulikunitz/xz v0.5.14
 	github.com/xaionaro-facebook/go-dmidecode v0.0.0-20220413144237-c42d5bef2498
