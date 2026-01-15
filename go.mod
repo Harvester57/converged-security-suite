@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/9elements/go-linux-lowlevel-hw v0.0.0-20240812193855-7e0a5df7e2d0
-	github.com/alecthomas/kong v0.7.1
+	github.com/alecthomas/kong v1.13.0
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
