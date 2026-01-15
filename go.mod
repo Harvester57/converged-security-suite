@@ -8,7 +8,7 @@ require (
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
-	github.com/edsrzf/mmap-go v1.1.0
+	github.com/edsrzf/mmap-go v1.2.0
 	github.com/facebookincubator/go-belt v0.0.0-20230703220829-b6b46c95ec1f
 	github.com/fearful-symmetry/gomsr v0.0.1
 	github.com/go-ng/slices v0.0.0-20230703171042-6195d35636a2
