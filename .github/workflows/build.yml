@@ -83,7 +83,7 @@ jobs:
           mv W790-WS_4.04.ROM firmware.bin
 
       - name: Download Artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: artifacts-amd64
           path: ./artifacts
@@ -116,7 +116,7 @@ jobs:
             - name: Install dependencies
               run: sudo apt-get install jq
             - name: Download Artifacts
-              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+              uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
               with:
                   name: artifacts-amd64
                   path: ./artifacts
