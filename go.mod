@@ -16,7 +16,7 @@ require (
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/google/go-attestation v0.5.2-0.20250122162710-c7aee80c5d76
 	github.com/google/go-tpm v0.9.3
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/linuxboot/fiano v1.2.1-0.20250121191917-5620ca1697c5
 	github.com/logrusorgru/aurora v2.0.3+incompatible
