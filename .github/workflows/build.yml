@@ -21,7 +21,7 @@ jobs:
             GOARCH: ${{ matrix.go-arch }}
         steps:
             - name: Checkout
-              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - name: Build txt-suite
               run: go build -ldflags '-X main.gitcommit=${{ github.sha }} -X main.gittag=${{ github.ref_name }} -w -extldflags "-static"' -o txt-suite cmd/core/txt-suite/*.go
             - name: Build txt-prov
@@ -35,7 +35,7 @@ jobs:
             - name: Build amd-suite
               run: go build -ldflags '-X main.gitcommit=${{ github.sha }} -X main.gittag=${{ github.ref_name }} -w -extldflags "-static"' -o amd-suite cmd/exp/amd-suite/*.go
             - name: Save artifacts
-              uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
                   name: artifacts-${{ matrix.go-arch }}
                   path: |
@@ -51,9 +51,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - name: Validate GoReleaser config
-              uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
+              uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
               with:
                 distribution: goreleaser
                 version: latest
@@ -64,7 +64,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - name: go test
               run: go test -v ./pkg/...
 
@@ -74,7 +74,7 @@ jobs:
 
       steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download file
         run: |
@@ -83,7 +83,7 @@ jobs:
           mv W790-WS_4.04.ROM firmware.bin
 
       - name: Download Artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: artifacts-amd64
           path: ./artifacts
@@ -112,11 +112,11 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - name: Install dependencies
               run: sudo apt-get install jq
             - name: Download Artifacts
-              uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+              uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: artifacts-amd64
                   path: ./artifacts
